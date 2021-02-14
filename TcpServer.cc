@@ -1,4 +1,6 @@
 #include "TcpServer.h"
+#include "Channel.h"
+
 
 TcpServer::TcpServer(){
 
@@ -28,6 +30,15 @@ int TcpServer::createAndListen(){
 
 }
 
+
+void TcpServer::OnIn(int sockfd){
+
+
+
+	return ;
+}
+
+
 void TcpServer::start(){
 	cout<<"------main------------"<<endl;
 	struct epoll_event ev,events[MAX_EVENTS];
@@ -42,14 +53,28 @@ void TcpServer::start(){
 	}
 	listenfd = createAndListen();
 	cout<<"listenfd:"<<listenfd<<endl;
+	/*
 	ev.data.fd = listenfd;
     ev.events = EPOLLIN;
     epoll_ctl(epollfd, EPOLL_CTL_ADD, listenfd, &ev);
+	*/
+
+	/*using class pChannel  epoll enableReading */
+	Channel* pChannel = new Channel(epollfd, listenfd);
+    pChannel->setCallBack(this);
+    pChannel->enableReading();
+
+	
+
+		
 	for(;;){
         int fds = epoll_wait(epollfd, events, MAX_EVENTS, -1);
 
-		for(int i=0;i<fds;i++){		
-			if(events[i].data.fd == listenfd){
+		for(int i=0;i<fds;i++){	
+			Channel* pChannel = static_cast<Channel*>(events[i].data.ptr);
+    		pChannel->setRevents(events[i].events);			
+			//if(events[i].data.fd == listenfd){
+			if(pChannel->_sockfd == listenfd){
 				connfd = accept(listenfd, (sockaddr*)&cliaddr, (socklen_t*)&clilen);
 				 if(connfd > 0){
                     cout << "new connection from " 
@@ -63,13 +88,20 @@ void TcpServer::start(){
                          << " errno:" << errno << endl; 
                 }
 				fcntl(connfd,F_SETFL,O_NONBLOCK);
+				/*
 				ev.data.fd=connfd;
 				ev.events=EPOLLIN;
-				epoll_ctl(epollfd,EPOLL_CTL_ADD,connfd,&ev);		
+				epoll_ctl(epollfd,EPOLL_CTL_ADD,connfd,&ev);	
+				*/
+
+				Channel* pChannel = new Channel(epollfd, connfd);
+        		pChannel->setCallBack(this);
+        		pChannel->enableReading();
 			
 			}
 			else if(events[i].events & EPOLLIN){
-				sockfd = events[i].data.fd;
+				//sockfd = events[i].data.fd;
+				sockfd = pChannel->_sockfd;
 				bzero(line, MAX_LINE);
 				readlength = read(sockfd, line, MAX_LINE);
 				cout<<"receive:"<<line<<endl;

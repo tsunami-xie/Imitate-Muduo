@@ -7,6 +7,9 @@
 #include <iostream>
 #include <unistd.h>
 
+#include "IChannelCallBack.h"
+
+
 
 #define MAX_EVENTS    10
 #define MAX_LINE	  10
@@ -15,12 +18,15 @@
 using namespace std;
 
 
-class TcpServer{
+class TcpServer : public IChannelCallBack{
 	public:
 		TcpServer();
 		~TcpServer();
 		void start();
+		virtual void OnIn(int sockfd);
 
 	private:
+		int _epollfd;
+        int _listenfd;
 		int createAndListen();
 };
