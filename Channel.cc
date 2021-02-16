@@ -3,6 +3,9 @@
 #include <iostream>
 #include "IChannelCallBack.h"
 
+using namespace std;
+
+
 Channel::Channel(int epollfd, int sockfd)
     :_epollfd(epollfd)
     ,_sockfd(sockfd)
@@ -29,8 +32,7 @@ void Channel::handleEvent(){
 
 
 
-void Channel::enableReading()
-{
+void Channel::enableReading(){
     _events |= EPOLLIN;
     update();
 }
@@ -38,7 +40,6 @@ void Channel::enableReading()
 void Channel::update(){
 	struct epoll_event ev;
     ev.data.ptr = this;
-	//ev.data.fd = _sockfd;
     ev.events = _events;
     epoll_ctl(_epollfd, EPOLL_CTL_ADD, _sockfd, &ev);
 };

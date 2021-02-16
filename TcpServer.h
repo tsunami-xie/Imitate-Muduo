@@ -6,6 +6,9 @@
 #include <string.h> //for bzero
 #include <iostream>
 #include <unistd.h>
+#include <map>
+#include "Declear.h"
+
 
 #include "IChannelCallBack.h"
 
@@ -29,4 +32,7 @@ class TcpServer : public IChannelCallBack{
 		int _epollfd;
         int _listenfd;
 		int createAndListen();
+		
+		struct epoll_event _events[MAX_EVENTS];
+        map<int, Channel*> _channels;
 };
