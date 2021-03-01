@@ -1,6 +1,8 @@
+#include <vector>
 #include "TcpServer.h"
 #include "Channel.h"
-#include <vector>
+#include "Acceptor.h"
+
 
 
 
@@ -12,26 +14,7 @@ TcpServer::~TcpServer(){
 
 }
 
-
-int TcpServer::createAndListen(){
-	int on =1;
-	int listenfd=socket(AF_INET,SOCK_STREAM,0);
-	struct sockaddr_in servaddr;
-	fcntl(listenfd, F_SETFL, O_NONBLOCK);
-	setsockopt(listenfd,SOL_SOCKET,SO_REUSEADDR,&on,sizeof(on));
-	servaddr.sin_family = AF_INET;
-    servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    servaddr.sin_port = htons(11111);
-	if(-1==bind(listenfd,(struct sockaddr *)&servaddr,sizeof(servaddr))){
-		 cout << "bind error, errno:" << errno << endl; 
-	}
-	if(-1==listen(listenfd,MAX_LISTENFD)){
-		cout << "listen error, errno:" << errno << endl; 
-	}
-	return listenfd;
-
-}
-
+#if 0
 
 void TcpServer::OnIn(int sockfd){
 
@@ -60,6 +43,10 @@ void TcpServer::OnIn(int sockfd){
 		Channel* pChannel = new Channel(_epollfd, connfd);
 		pChannel->setCallBack(this);
 		pChannel->enableReading();
+
+		/*add tcpconnection class*/
+
+		
 	 }else{
 		bzero(line, MAX_LINE);
 		readlength = read(sockfd, line, MAX_LINE);
@@ -71,7 +58,7 @@ void TcpServer::OnIn(int sockfd){
 		write(sockfd, line, readlength);
 	 }
 }
-
+#endif
 
 void TcpServer::start(){
 	cout<<"------main------------"<<endl;
@@ -79,15 +66,15 @@ void TcpServer::start(){
 	if(_epollfd<0){
 		cout << "epoll_create error, error:" << _epollfd << endl;
 	}
-	_listenfd = createAndListen();
-	/*using class pChannel  epoll enableReading */
-	Channel* pChannel = new Channel(_epollfd, _listenfd);
-    pChannel->setCallBack(this);
-    pChannel->enableReading();
 
+	/*add Acceptor class*/
+	_pAcceptor = new Acceptor(_epollfd); // Memory Leak !!!
+    _pAcceptor->setCallBack(this);
+    _pAcceptor->start();
+	
 	
 
-		
+
 	for(;;){
         int fds = epoll_wait(_epollfd, _events, MAX_EVENTS, -1);
 		vector<Channel*> channels;
